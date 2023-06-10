@@ -25,7 +25,8 @@ site_urls = {
     "Repubblica": "https://www.repubblica.it",
     "SkyUK": "https://news.sky.com",
     "NHK": "https://www3.nhk.or.jp/news/",
-    "Associated Press": "https://apnews.com"
+    "Associated Press": "https://apnews.com",
+    "SkyIT": "https://tg24.sky.it/"
 }
 
 # Create a set to store news that have already been sent
@@ -145,6 +146,28 @@ def flash_ap(soupSite):
                 sent_news.add(flash_ap)
                 send_news("AP", flash_ap, ap_link, priv_channel_id)
 
+# Flash Sky IT
+def flash_skyit(soupSite):
+    skyit_banner = soupSite.find("div", class_="c-breaking-news")
+    if skyit_banner is None:
+        pass
+    else:
+        skyit_article = skyit_banner.find("a", class_="c-breaking-news__content")
+        skyit_link = skyit_article['href']
+        skyit_title = skyit_article.find("p", class_="c-breaking-news__text").find("span")
+        if skyit_title is None:
+            pass
+        else:
+            # Store the link if it exists
+            if skyit_link != '':
+                flash_skyit_link = skyit_link
+            flash_skyit = skyit_title.text
+            if check_news(flash_skyit):
+                pass
+            else:
+                sent_news.add(flash_skyit)
+                send_news("SkyTG24", flash_skyit, flash_skyit_link, priv_channel_id)
+
 # Flash Reuters
 def flash_reuters():
     flash_reuters = requests.get('https://api.priapusiq.com/reuters')
@@ -184,6 +207,8 @@ def fetch_news():
                 flash_nhk(soupSite)
             case "Associated Press":
                 flash_ap(soupSite)
+            case "SkyIT":
+                flash_skyit(soupSite)
     flash_reuters()
 
 # Main loop
