@@ -187,7 +187,18 @@ def flash_reuters():
                         pass
                     else:
                         sent_news.add(reuters_title)
-                        send_news("Reuters", reuters_title, '', priv_channel_id)
+                        reuters_search = requests.get('https://www.reuters.com/pf/api/v3/content/fetch/articles-by-search-v2?query=%7B%22keyword%22%3A%22' + reuters_title + '%22%2C%22offset%22%3A0%2C%22orderby%22%3A%22display_date%3Adesc%22%2C%22size%22%3A20%2C%22website%22%3A%22reuters%$                        reuters_results = json.loads(reuters_search.text)
+                        if reuters_results is None:
+                            send_news("Reuters", reuters_title, '', priv_channel_id)
+                        else:
+                            if reuters_results:
+                                try:
+                                    reuters_url = reuters_results['result']['articles'][0]['canonical_url']
+                                except IndexError:
+                                    pass
+                                else:
+                                    reuters_link = "https://www.reuters.com" + reuters_url
+                                    send_news("Reuters", reuters_title, reuters_link, priv_channel_id)
                 else:
                     pass
 
