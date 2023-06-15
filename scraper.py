@@ -2,6 +2,7 @@
 from bs4 import BeautifulSoup
 from telegram import Bot
 from dotenv import load_dotenv
+from json import JSONDecodeError
 import os
 import requests
 import time
@@ -72,7 +73,7 @@ def flash_repubblica(soupSite):
             pass
         else:
             # Store the link if it exists
-            if repubblica_title['href'] != '':
+            if repubblica_title['href'] != None:
                 flash_repubblica_link = repubblica_title['href']
             flash_repubblica = repubblica_title.text
             if check_news(flash_repubblica):
@@ -93,7 +94,7 @@ def flash_skyuk(soupSite):
             pass
         else:
             # Store the link if it exists
-            if flash_sky_link['href'] != '':
+            if flash_sky_link['href'] != None:
                 flash_sky_link = site_urls["SkyUK"] + flash_sky_link['href']
             flash_sky = flash_sky_title.text
             if check_news(flash_sky):
@@ -115,7 +116,7 @@ def flash_nhk(soupSite):
             pass
         else:
             # Store the link if it exists
-            if nhk_link['href'] != '':
+            if nhk_link['href'] != None:
                 nhk_link = "https://www3.nhk.or.jp" + nhk_link['href']
             flash_nhk = nhk_title.text
             if check_news(flash_nhk):
@@ -137,7 +138,7 @@ def flash_ap(soupSite):
             pass
         else:
             # Store the link if it exists
-            if ap_link['href'] != '':
+            if ap_link['href'] != None:
                 ap_link = site_urls["Associated Press"] + ap_link['href']
             flash_ap = ap_title.text
             if check_news(flash_ap):
@@ -152,14 +153,19 @@ def flash_skyit(soupSite):
     if skyit_banner is None:
         pass
     else:
-        skyit_article = skyit_banner.find("a", class_="c-breaking-news__content")
-        skyit_link = skyit_article['href']
-        skyit_title = skyit_article.find("p", class_="c-breaking-news__text").find("span")
+        skyit_article_link = skyit_banner.find("a", class_="c-breaking-news__content")
+        skyit_article_nolink = skyit_banner.find("div", class_="c-breaking-news__content")
+        if skyit_article_link != None:
+            skyit_link = skyit_article_link['href']
+            skyit_title = skyit_article_link.find("p", class_="c-breaking-news__text").find("span")
+        else:
+            skyit_link = ''
+            skyit_title = skyit_article_nolink.find("p", class_="c-breaking-news__text").find("span")
         if skyit_title is None:
             pass
         else:
             # Store the link if it exists
-            if skyit_link != '':
+            if skyit_link != None:
                 flash_skyit_link = skyit_link
             flash_skyit = skyit_title.text
             if check_news(flash_skyit):
@@ -170,38 +176,42 @@ def flash_skyit(soupSite):
 
 # Flash Reuters
 def flash_reuters():
-    flash_reuters = requests.get('https://api.priapusiq.com/reuters')
-    reuters_data = json.loads(flash_reuters.text)
-    if reuters_data is None:
-        pass
-    else:
-        if reuters_data:
-            try:
-                reuters_title = reuters_data['data'][0]['title']
-            except IndexError:
-                pass
-            else:
-                reuters_version = reuters_data['data'][0]['version']
-                if reuters_version == 1:
-                    if check_news(reuters_title):
-                        pass
-                    else:
-                        sent_news.add(reuters_title)
-                        reuters_search = requests.get('https://www.reuters.com/pf/api/v3/content/fetch/articles-by-search-v2?query=%7B%22keyword%22%3A%22' + reuters_title + '%22%2C%22offset%22%3A0%2C%22orderby%22%3A%22display_date%3Adesc%22%2C%22size%22%3A20%2C%22website%22%3A%22reuters%22%7D&d=144&_website=reuters')
-                        reuters_results = json.loads(reuters_search.text)
-                        if reuters_results is None:
-                            send_news("Reuters", reuters_title, '', priv_channel_id)
-                        else:
-                            if reuters_results:
-                                try:
-                                    reuters_url = reuters_results['result']['articles'][0]['canonical_url']
-                                except IndexError:
-                                    pass
-                                else:
-                                    reuters_link = "https://www.reuters.com" + reuters_url
-                                    send_news("Reuters", reuters_title, reuters_link, priv_channel_id)
-                else:
+    try:
+        flash_reuters = requests.get('https://api.priapusiq.com/reuters')
+        reuters_data = json.loads(flash_reuters.text)
+        if reuters_data is None:
+            pass
+        else:
+            if reuters_data:
+                try:
+                    reuters_title = reuters_data['data'][0]['title']
+                except IndexError:
                     pass
+                else:
+                    reuters_version = reuters_data['data'][0]['version']
+                    if reuters_version == 1:
+                        if check_news(reuters_title):
+                            pass
+                        else:
+                            sent_news.add(reuters_title)
+                            time.sleep(10)
+                            reuters_search = requests.get('https://www.reuters.com/pf/api/v3/content/fetch/articles-by-search-v2?query=%7B%22keyword%22%3A%22' + reuters_title + '%22%2C%22offset%22%3A0%2C%22orderby%22%3A%22display_date%3Adesc%22%2C%22size%22%3A20%2C%22website%22%3A%22reuters%22%7D&d=144&_website=reuters')
+                            reuters_results = json.loads(reuters_search.text)
+                            if reuters_results is None:
+                                send_news("Reuters", reuters_title, '', priv_channel_id)
+                            else:
+                                if reuters_results:
+                                    try:
+                                        reuters_url = reuters_results['result']['articles'][0]['canonical_url']
+                                    except (IndexError, KeyError, TypeError) as e:
+                                        pass
+                                    else:
+                                        reuters_link = "https://www.reuters.com" + reuters_url
+                                        send_news("Reuters", reuters_title, reuters_link, priv_channel_id)
+                    else:
+                        pass
+    except JSONDecodeError:
+       pass
 
 # Fetch news
 def fetch_news():
