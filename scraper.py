@@ -127,19 +127,19 @@ def flash_nhk(soupSite):
 
 # Flash Associated Press
 def flash_ap(soupSite):
-    ap_top = soupSite.find("div", class_="TopStories")
+    ap_top = soupSite.find("div", class_="PagePromoModuleA")
     if ap_top is None:
         pass
     else:
-        ap_article = soupSite.find("div", class_="CardHeadline")
-        ap_link = ap_article.find("a")
-        ap_title = ap_article.find("h2")
+        ap_article = soupSite.find("div", class_="PagePromoModuleA-content")
+        ap_link = ap_article.find("div", class_="PagePromo-title").find("a")
+        ap_title = ap_article.find("span", class_="PagePromoContentIcons-text")
         if ap_title is None:
             pass
         else:
             # Store the link if it exists
             if ap_link['href'] != None:
-                ap_link = site_urls["Associated Press"] + ap_link['href']
+                ap_link = ap_link['href']
             flash_ap = ap_title.text
             if check_news(flash_ap):
                 pass
